@@ -115,6 +115,10 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ session, onUpdateS
                  const result = await geminiService.generateImage(prompt);
                  updateLastMessage(result, false);
             }
+        } else if (trimmedInput.toLowerCase().replace(/[?.]/g, '').trim() === 'who created you') {
+             // Handle specific creator query
+             await new Promise(resolve => setTimeout(resolve, 600)); // Simulate thinking delay
+             updateLastMessage("Mriganka Singha", false);
         } else {
             // Handle Text Chat
             let fullResponse = '';
