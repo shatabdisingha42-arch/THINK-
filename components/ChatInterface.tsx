@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
-import { Send, StopCircle, RefreshCw, Loader2 } from 'lucide-react';
+import { Send, StopCircle, RefreshCw, Loader2, Image as ImageIcon } from 'lucide-react';
 import { ChatSession, Message } from '../types';
 import { geminiService } from '../services/geminiService';
 import { MessageItem } from './MessageItem';
@@ -65,10 +65,13 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ session, onUpdateS
     e?.preventDefault();
     if (!input.trim() || isGenerating) return;
 
+    const trimmedInput = input.trim();
+    const isImageRequest = trimmedInput.toLowerCase().startsWith('/image');
+
     const userMessage: Message = {
       id: uuidv4(),
       role: 'user',
-      content: input.trim(),
+      content: trimmedInput,
       timestamp: Date.now(),
     };
 
@@ -91,7 +94,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ session, onUpdateS
     const initialAiMessage: Message = {
       id: aiMessageId,
       role: 'model',
-      content: '', // Start empty
+      content: isImageRequest ? 'Generating image...' : '', // Start empty or with status
       timestamp: Date.now(),
       isStreaming: true
     };
@@ -103,17 +106,28 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ session, onUpdateS
     }));
 
     try {
-        let fullResponse = '';
-        
-        const stream = geminiService.sendMessageStream(userMessage.content);
-        
-        for await (const chunk of stream) {
-            fullResponse += chunk;
-            updateLastMessage(fullResponse, true);
+        if (isImageRequest) {
+            // Handle Image Generation
+            const prompt = trimmedInput.slice(6).trim();
+            if (!prompt) {
+                 updateLastMessage("Please provide a description for the image after /image.", false);
+            } else {
+                 const result = await geminiService.generateImage(prompt);
+                 updateLastMessage(result, false);
+            }
+        } else {
+            // Handle Text Chat
+            let fullResponse = '';
+            const stream = geminiService.sendMessageStream(userMessage.content);
+            
+            for await (const chunk of stream) {
+                fullResponse += chunk;
+                updateLastMessage(fullResponse, true);
+            }
+            
+            // Finalize
+            updateLastMessage(fullResponse, false);
         }
-        
-        // Finalize
-        updateLastMessage(fullResponse, false);
 
     } catch (err: any) {
         console.error(err);
@@ -140,6 +154,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ session, onUpdateS
                  <RefreshCw className="w-8 h-8 text-blue-500" />
               </div>
               <h2 className="text-xl font-semibold text-gray-400">How can I help you today?</h2>
+              <p className="text-sm text-gray-500">Try "/image a cyberpunk city"</p>
            </div>
         ) : (
             <>
@@ -164,7 +179,7 @@ export const ChatInterface: React.FC<ChatInterfaceProps> = ({ session, onUpdateS
                 value={input}
                 onChange={handleInputChange}
                 onKeyDown={handleKeyDown}
-                placeholder="Message THINK..."
+                placeholder="Message THINK... (Type /image for images)"
                 className="w-full py-4 pl-4 pr-12 bg-transparent border-none focus:ring-0 resize-none max-h-[200px] min-h-[56px] text-gray-100 placeholder-gray-500 leading-relaxed"
                 rows={1}
                 disabled={isGenerating}

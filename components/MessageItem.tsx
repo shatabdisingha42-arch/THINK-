@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
-import { User, Bot } from 'lucide-react';
+import { User, Bot, Download } from 'lucide-react';
 import { Message } from '../types';
 import remarkGfm from 'remark-gfm';
 
@@ -38,6 +38,8 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message }) => {
                  ) : (
                     <ReactMarkdown 
                         remarkPlugins={[remarkGfm]}
+                        // Allow data: URIs for images
+                        urlTransform={(value) => value}
                         components={{
                             // Override styling for links to make them visible in dark mode
                             a: ({node, ...props}) => <a className="text-blue-400 hover:text-blue-300 underline" {...props} />,
@@ -60,6 +62,29 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message }) => {
                                         {children}
                                     </code>
                                 )
+                            },
+                            // Custom Image Renderer
+                            img: ({node, src, alt, ...props}) => {
+                                const imageSrc = typeof src === 'string' ? src : undefined;
+                                if (!imageSrc) return null;
+                                return (
+                                    <div className="relative group inline-block max-w-full my-2">
+                                        <img 
+                                            src={imageSrc} 
+                                            alt={alt} 
+                                            className="rounded-lg shadow-lg max-w-full h-auto border border-gray-700 bg-gray-900" 
+                                            {...props}
+                                        />
+                                        <a 
+                                            href={imageSrc} 
+                                            download={`generated-image-${Date.now()}.jpg`}
+                                            className="absolute top-2 right-2 p-2 bg-black/60 hover:bg-black/80 text-white rounded-lg opacity-0 group-hover:opacity-100 transition-all backdrop-blur-sm"
+                                            title="Download Image"
+                                        >
+                                            <Download size={16} />
+                                        </a>
+                                    </div>
+                                );
                             }
                         }}
                     >
