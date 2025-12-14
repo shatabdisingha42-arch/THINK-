@@ -1,0 +1,5 @@
+{
+  "name": "THINK Chat",
+  "description": "A fully functional AI chatbot interface similar to ChatGPT, powered by the Google Gemini API. Features real-time streaming responses, markdown rendering, conversation history, and a responsive design.",
+  "requestFramePermissions": []
+}
