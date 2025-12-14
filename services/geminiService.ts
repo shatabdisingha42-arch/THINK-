@@ -60,37 +60,23 @@ export class GeminiService {
   }
 
   /**
-   * Generates an image using gemini-2.5-flash-image
+   * Generates an image using Pollinations.ai (Free, No Billing Required)
    */
   async generateImage(prompt: string): Promise<string> {
     try {
-      const response = await this.ai.models.generateContent({
-        model: 'gemini-2.5-flash-image',
-        contents: {
-          parts: [{ text: prompt }]
-        },
-        config: {
-            imageConfig: {
-                aspectRatio: "1:1"
-            }
-        }
-      });
+      // Simulate a brief processing delay for better UX
+      await new Promise(resolve => setTimeout(resolve, 800));
 
-      // Iterate through candidates and parts to find the image
-      if (response.candidates && response.candidates.length > 0) {
-          for (const part of response.candidates[0].content?.parts || []) {
-              if (part.inlineData && part.inlineData.mimeType.startsWith('image/')) {
-                  const mimeType = part.inlineData.mimeType;
-                  const data = part.inlineData.data;
-                  return `![Generated Image](data:${mimeType};base64,${data})`;
-              }
-          }
-      }
-      
-      return "Failed to generate image. No image data received.";
+      const encodedPrompt = encodeURIComponent(prompt);
+      // Add a random seed to ensure a new image is generated each time
+      const seed = Math.floor(Math.random() * 1000000);
+      const imageUrl = `https://image.pollinations.ai/prompt/${encodedPrompt}?width=1024&height=1024&seed=${seed}&nologo=true`;
+
+      // Return the image as a markdown image link
+      return `![Generated Image](${imageUrl})`;
     } catch (error) {
       console.error("Image Generation Error:", error);
-      return `Sorry, I encountered an error generating the image. \n\nError: ${error instanceof Error ? error.message : String(error)}`;
+      return `Sorry, I encountered an error generating the image.`;
     }
   }
 }
