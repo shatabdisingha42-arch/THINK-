@@ -60,27 +60,36 @@ export class GeminiService {
   }
 
   /**
-   * Generates an image using Imagen 4
+   * Generates an image using gemini-2.5-flash-image
    */
   async generateImage(prompt: string): Promise<string> {
     try {
-      const response = await this.ai.models.generateImages({
-        model: 'imagen-4.0-generate-001',
-        prompt: prompt,
-        config: {
-          numberOfImages: 1,
-          outputMimeType: 'image/jpeg',
+      const response = await this.ai.models.generateContent({
+        model: 'gemini-2.5-flash-image',
+        contents: {
+          parts: [{ text: prompt }]
         },
+        config: {
+            imageConfig: {
+                aspectRatio: "1:1"
+            }
+        }
       });
 
-      const image = response.generatedImages?.[0]?.image;
-      if (image?.imageBytes) {
-        // Return markdown syntax for the image
-        return `![Generated Image](data:image/jpeg;base64,${image.imageBytes})`;
+      // Iterate through candidates and parts to find the image
+      if (response.candidates && response.candidates.length > 0) {
+          for (const part of response.candidates[0].content?.parts || []) {
+              if (part.inlineData && part.inlineData.mimeType.startsWith('image/')) {
+                  const mimeType = part.inlineData.mimeType;
+                  const data = part.inlineData.data;
+                  return `![Generated Image](data:${mimeType};base64,${data})`;
+              }
+          }
       }
+      
       return "Failed to generate image. No image data received.";
     } catch (error) {
-      console.error("Imagen API Error:", error);
+      console.error("Image Generation Error:", error);
       return `Sorry, I encountered an error generating the image. \n\nError: ${error instanceof Error ? error.message : String(error)}`;
     }
   }
